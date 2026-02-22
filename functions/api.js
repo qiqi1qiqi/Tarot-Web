@@ -20,7 +20,7 @@ export async function onRequestPost(context) {
 
   // --- 配置区域 ---
   // 优先级：Cloudflare 环境变量 > 硬编码默认值
-  const baseUrl = env.LLM_BASE_URL || "https://nas-ai.4ce.cn/v1"; 
+  const baseUrl = env.LLM_BASE_URL || "https://api.deepseek.com/v1"; 
   const apiKey = env.LLM_API_KEY || "sk-L8W2WtnCtdwG6nctF975D0E770144dE5Be3123Fa16720a03";
   // ----------------
 
@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
         "content": `问题：'${question}'。牌阵：${cardDetails}。`
       }
     ],
-    "model": "glm-4-flash",
+    "model": "deepseek-chat",
     "temperature": 0.7,
     "stream": false
   };
