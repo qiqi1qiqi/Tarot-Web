@@ -1,7 +1,7 @@
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  // 1. 获取前端传来的参数 (匹配上一轮 Home.vue 的数据结构)
+  // 1. 获取前端传来的参数
   const { question, cards } = await request.json();
 
   // 2. 塔罗牌名称映射表
@@ -14,35 +14,36 @@ export async function onRequestPost(context) {
     "20": "审判", "21": "世界"
   };
 
-  // 格式化卡牌信息供 AI 理解
   const cardDetails = cards.map(c => 
     `${cardNames[c.no] || '未知卡牌'}(${c.isReversed ? '逆位' : '正位'})`
   ).join('、');
 
-  // 3. 构建请求体
+  // --- 配置区域 ---
+  // 优先级：Cloudflare 环境变量 > 硬编码默认值
+  const baseUrl = env.LLM_BASE_URL || "https://nas-ai.4ce.cn/v1"; 
+  const apiKey = env.LLM_API_KEY || "sk-L8W2WtnCtdwG6nctF975D0E770144dE5Be3123Fa16720a03";
+  // ----------------
+
   const body = {
     "messages": [
       {
         "role": "system",
-        "content": "你是一位拥有20年经验的塔罗占卜师，精通神秘学与心理学。请根据用户的问题和抽到的牌阵进行深度解析。你的回答应包含：1.牌面解析（结合正逆位意象）；2.综合建议；3.最后给出一个百分比代表事情的成败几率或能量强度。语气要温暖、睿智且富有启发性，使用 Markdown 格式。"
+        "content": "你是一位专业的塔罗占卜师。请根据用户的问题和抽到的牌进行深度解析，包含牌面解析、综合建议和成败概率。使用 Markdown 格式。"
       },
       {
         "role": "user",
-        "content": `我的问题是：'${question}'。我抽到的三张牌是：${cardDetails}。请帮我详细占卜。`
+        "content": `问题：'${question}'。牌阵：${cardDetails}。`
       }
     ],
-    "model": "glm-4-flash", // 你可以根据需要改为 deepseek-chat 或其他
+    "model": "glm-4-flash",
     "temperature": 0.7,
     "stream": false
   };
 
   try {
-    // 4. 发起 API 请求
-    // 注意：env.API_KEY 是你在 Cloudflare 后台设置的环境变量。
-    // 如果你还没设置，可以暂时先换回你原来的 sk-... 字符串，但生产环境建议用 env 变量。
-    const apiKey = env.LLM_API_KEY || "sk-L8W2WtnCtdwG6nctF975D0E770144dE5Be3123Fa16720a03"; 
-    
-    const res = await fetch("https://nas-ai.4ce.cn/v1/chat/completions", {
+    // 3. 使用拼接后的 URL 发起请求
+    // 注意：这里使用了模板字符串将 baseUrl 和具体接口路径 (/chat/completions) 结合
+    const res = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -52,13 +53,13 @@ export async function onRequestPost(context) {
     });
 
     if (!res.ok) {
-      return new Response("AI 占卜师暂时无法感应，请稍后再试。", { status: 500 });
+      const errorDetail = await res.text();
+      return new Response(`AI 接口异常: ${res.status} - ${errorDetail}`, { status: 500 });
     }
 
     const data = await res.json();
     const result = data.choices[0].message.content;
 
-    // 返回纯文本给前端解析
     return new Response(result);
 
   } catch (error) {
