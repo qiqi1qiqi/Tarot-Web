@@ -1,7 +1,6 @@
 <template>
   <footer 
-    class="w-full max-w-[888px] px-[16.66px] mt-8 pb-8 bg-cover bg-center rounded-t-lg"
-    :style="{ backgroundImage: `url('https://lsky.gaowanyao.com/i/69319fd257b00.png')` }"
+    class="w-full max-w-[888px] px-[16.66px] mt-8 pb-8 bg-transparent rounded-t-lg"
   >
     <main class="m-auto pt-4 flex flex-col justify-center items-center gap-4 w-full max-w-[1666px] border-t border-black/10">
       <section class="text-center space-y-2">
@@ -24,8 +23,9 @@
 </script>
 
 <style scoped>
-/* 移除之前的 text-shadow 以免产生脏脏的重影 */
+/* 确保没有阴影干扰透明效果 */
 footer {
   text-shadow: none;
+  background-color: transparent;
 }
 </style>
